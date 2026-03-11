@@ -1,0 +1,93 @@
+---
+title: "Installation"
+description: "Install the airline-codes package using npm, yarn, or pnpm"
+---
+
+## Package Manager Installation
+
+Install `airline-codes` using your preferred package manager:
+
+<CodeGroup>
+
+```bash npm
+npm install airline-codes
+```
+
+```bash yarn
+yarn add airline-codes
+```
+
+```bash pnpm
+pnpm add airline-codes
+```
+
+</CodeGroup>
+
+## Requirements
+
+The package has the following dependencies which will be installed automatically:
+
+- **backbone** (^1.1.2) - Provides the Collection interface
+- **lodash** (^4.17.21) - Utility functions used by Backbone
+- **JSONStream** (^1.0.4) - JSON parsing utilities
+- **csv** (^5.1.3) - CSV processing for data updates
+
+<Info>
+  All dependencies are bundled with the package and managed automatically. No additional configuration is required.
+</Info>
+
+## Verify Installation
+
+After installation, verify the package is working correctly:
+
+```javascript
+const airlines = require('airline-codes');
+
+// Check that the collection loaded
+console.log(`Loaded ${airlines.length} airlines`);
+// => Loaded 6000+ airlines
+
+// Test a simple lookup
+const aa = airlines.findWhere({ iata: 'AA' });
+console.log(aa.get('name'));
+// => American Airlines
+```
+
+## TypeScript Support
+
+<Warning>
+  This package does not include TypeScript definitions. If you're using TypeScript, you may need to add type declarations or use `@ts-ignore` directives.
+</Warning>
+
+For TypeScript projects, you can create a basic declaration file:
+
+```typescript types/airline-codes.d.ts
+declare module 'airline-codes' {
+  import { Collection } from 'backbone';
+  
+  interface Airline {
+    id: string;
+    name: string;
+    alias: string;
+    iata: string;
+    icao: string;
+    callsign: string;
+    country: string;
+    active: string;
+  }
+  
+  const airlines: Collection<Airline>;
+  export = airlines;
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get started with basic usage examples
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/overview">
+    Explore all available methods and properties
+  </Card>
+</CardGroup>

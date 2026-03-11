@@ -1,0 +1,464 @@
+---
+title: "Collection Methods"
+description: "Master Backbone Collection methods for querying, sorting, and manipulating airline data"
+---
+
+The airline-codes package exports a Backbone Collection, giving you access to powerful built-in methods for data manipulation. This page covers the most useful collection methods.
+
+## findWhere - Find Single Model
+
+The `findWhere` method returns the first model that matches the given attributes:
+
+```javascript
+const airlines = require('airline-codes');
+
+// Find by IATA code
+const airline = airlines.findWhere({ iata: 'AA' });
+
+if (airline) {
+  console.log(airline.get('name')); // "American Airlines"
+} else {
+  console.log('Airline not found');
+}
+```
+
+<Info>
+  `findWhere` returns a Backbone Model or `undefined` if no match is found. Always check if the result exists before using it.
+</Info>
+
+### Multiple Criteria
+
+```javascript
+const airlines = require('airline-codes');
+
+// Find airline by multiple attributes
+const airline = airlines.findWhere({ 
+  iata: 'BA',
+  country: 'United Kingdom'
+});
+
+console.log(airline.get('name')); // "British Airways"
+console.log(airline.get('callsign')); // "SPEEDBIRD"
+```
+
+## where - Find Multiple Models
+
+The `where` method returns an array of all models matching the given attributes:
+
+```javascript
+const airlines = require('airline-codes');
+
+// Find all airlines from a country
+const usAirlines = airlines.where({ country: 'United States' });
+
+console.log(`Found ${usAirlines.length} US airlines`);
+
+usAirlines.slice(0, 5).forEach(airline => {
+  console.log(`${airline.get('name')} - ${airline.get('iata')}`);
+});
+// Output:
+// American Airlines - AA
+// Delta Air Lines - DL
+// Alaska Airlines - AS
+// ...
+```
+
+<Tabs>
+  <Tab title="By Country">
+    ```javascript
+    const japaneseAirlines = airlines.where({ country: 'Japan' });
+    console.log(`Japan has ${japaneseAirlines.length} airlines`);
+    ```
+  </Tab>
+  <Tab title="By Active Status">
+    ```javascript
+    const activeAirlines = airlines.where({ active: 'Y' });
+    console.log(`${activeAirlines.length} active airlines`);
+    ```
+  </Tab>
+  <Tab title="Multiple Criteria">
+    ```javascript
+    const activeUSAirlines = airlines.where({ 
+      country: 'United States',
+      active: 'Y'
+    });
+    console.log(activeUSAirlines.length);
+    ```
+  </Tab>
+</Tabs>
+
+## at - Access by Index
+
+Get a model at a specific position in the collection:
+
+```javascript
+const airlines = require('airline-codes');
+
+// Get the first airline (index 0)
+const first = airlines.at(0);
+console.log(first.get('name')); // "Private flight" (depends on sort)
+
+// Get the 100th airline
+const airline100 = airlines.at(100);
+console.log(airline100.toJSON());
+
+// Get the last airline
+const last = airlines.at(airlines.length - 1);
+console.log(last.get('name'));
+```
+
+<Note>
+  The collection is sorted by the `name` attribute by default (see `airlines.comparator = 'name'` in index.js).
+</Note>
+
+## pluck - Extract Values
+
+Extract a specific attribute from all models:
+
+```javascript
+const airlines = require('airline-codes');
+
+// Get all airline names
+const names = airlines.pluck('name');
+console.log(names.slice(0, 5));
+// ["Private flight", "1Time Airline", "40-Mile Air", ...]
+
+// Get all IATA codes
+const iataCodes = airlines.pluck('iata');
+console.log(iataCodes.slice(0, 10));
+// ["-", "1T", "Q5", "AN", "1B", ...]
+
+// Get all countries
+const countries = airlines.pluck('country');
+const uniqueCountries = [...new Set(countries)];
+console.log(`Airlines from ${uniqueCountries.length} countries`);
+```
+
+## filter - Custom Filtering
+
+Filter models using a custom function:
+
+```javascript
+const airlines = require('airline-codes');
+
+// Find airlines with valid IATA codes
+const withValidIATA = airlines.filter(airline => {
+  const iata = airline.get('iata');
+  return iata && 
+         iata !== '' && 
+         iata !== '-' && 
+         iata !== 'N/A' &&
+         iata.length === 2;
+});
+
+console.log(`${withValidIATA.length} airlines with valid IATA codes`);
+
+// Find airlines with "Air" in the name
+const withAir = airlines.filter(airline => {
+  const name = airline.get('name');
+  return name.includes('Air');
+});
+
+console.log(`${withAir.length} airlines with "Air" in name`);
+```
+
+<Accordion title="Advanced Filtering Examples">
+  ```javascript
+  const airlines = require('airline-codes');
+
+  // Find airlines from Asia with IATA codes
+  const asianCountries = [
+    'Japan', 'China', 'South Korea', 'Thailand', 
+    'Malaysia', 'Singapore', 'India'
+  ];
+
+  const asianAirlines = airlines.filter(airline => {
+    const country = airline.get('country');
+    const iata = airline.get('iata');
+    return asianCountries.includes(country) && 
+           iata && 
+           iata.length === 2;
+  });
+
+  console.log(`Found ${asianAirlines.length} Asian airlines with IATA codes`);
+
+  // Find airlines with matching ICAO and callsign patterns
+  const withMatchingCodes = airlines.filter(airline => {
+    const icao = airline.get('icao');
+    const callsign = airline.get('callsign');
+    return icao && callsign && 
+           icao.length === 3 && 
+           callsign.length > 0;
+  });
+
+  console.log(withMatchingCodes.length);
+  ```
+</Accordion>
+
+## map - Transform Data
+
+Transform each model into a new format:
+
+```javascript
+const airlines = require('airline-codes');
+
+// Create simplified objects
+const simplified = airlines.map(airline => ({
+  code: airline.get('iata'),
+  name: airline.get('name')
+}));
+
+console.log(simplified[0]); // { code: "-", name: "Private flight" }
+
+// Create display strings
+const displayStrings = airlines.map(airline => 
+  `${airline.get('name')} (${airline.get('iata')})`
+);
+
+console.log(displayStrings.slice(0, 3));
+// ["Private flight (-)", "1Time Airline (1T)", "40-Mile Air (Q5)"]
+```
+
+## forEach - Iterate Over Models
+
+Execute a function for each model in the collection:
+
+```javascript
+const airlines = require('airline-codes');
+
+let count = 0;
+airlines.forEach(airline => {
+  const iata = airline.get('iata');
+  if (iata && iata.length === 2) {
+    count++;
+  }
+});
+
+console.log(`${count} airlines have 2-letter IATA codes`);
+
+// Build a lookup table
+const lookup = {};
+airlines.forEach(airline => {
+  const iata = airline.get('iata');
+  if (iata && iata !== '' && iata !== '-') {
+    lookup[iata] = airline.get('name');
+  }
+});
+
+console.log(lookup['AA']); // "American Airlines"
+```
+
+## find - Custom Search
+
+Find the first model that passes a test function:
+
+```javascript
+const airlines = require('airline-codes');
+
+// Find first airline from Germany
+const germanAirline = airlines.find(airline => 
+  airline.get('country') === 'Germany'
+);
+
+console.log(germanAirline.get('name')); // First German airline in collection
+
+// Find first airline with specific callsign pattern
+const withEMIRATES = airlines.find(airline => 
+  airline.get('callsign') === 'EMIRATES'
+);
+
+console.log(withEMIRATES.get('name')); // "Emirates"
+```
+
+<Warning>
+  `find` returns `undefined` if no model matches. Always check the result before using it.
+</Warning>
+
+## sortBy - Custom Sorting
+
+Sort and return models based on a custom criterion:
+
+```javascript
+const airlines = require('airline-codes');
+
+// Sort by IATA code
+const sortedByIATA = airlines.sortBy(airline => airline.get('iata'));
+console.log(sortedByIATA.slice(0, 5).map(a => a.get('iata')));
+// ["-", "-", "0B", "0D", ...]
+
+// Sort by country
+const sortedByCountry = airlines.sortBy(airline => airline.get('country'));
+console.log(sortedByCountry[0].get('country'));
+
+// Note: The original collection remains sorted by 'name'
+console.log(airlines.comparator); // "name"
+```
+
+## groupBy - Group Models
+
+Group models by a specific attribute:
+
+```javascript
+const airlines = require('airline-codes');
+
+// Group by country
+const byCountry = airlines.groupBy(airline => airline.get('country'));
+
+console.log(Object.keys(byCountry).length); // Number of countries
+console.log(byCountry['United States'].length); // US airlines count
+
+// Group by active status
+const byStatus = airlines.groupBy(airline => airline.get('active'));
+console.log(`Active: ${byStatus['Y'].length}`);
+console.log(`Inactive: ${byStatus['N'] ? byStatus['N'].length : 0}`);
+```
+
+## size & length - Collection Size
+
+Get the total number of models in the collection:
+
+```javascript
+const airlines = require('airline-codes');
+
+console.log(airlines.length);  // 6048 (or similar)
+console.log(airlines.size());  // Same as length
+
+// Count active airlines
+const active = airlines.where({ active: 'Y' });
+console.log(`Active airlines: ${active.length}`);
+```
+
+## first & last - Get Endpoints
+
+Get the first or last model(s) in the collection:
+
+```javascript
+const airlines = require('airline-codes');
+
+// Get first model
+const first = airlines.first();
+console.log(first.get('name')); // First airline (alphabetically by name)
+
+// Get first 5 models
+const firstFive = airlines.first(5);
+firstFive.forEach(a => console.log(a.get('name')));
+
+// Get last model
+const last = airlines.last();
+console.log(last.get('name')); // Last airline (alphabetically)
+
+// Get last 3 models
+const lastThree = airlines.last(3);
+console.log(lastThree.length); // 3
+```
+
+<Tip>
+  Since the collection is sorted by name, `first()` and `last()` return airlines at the beginning and end of the alphabetical list.
+</Tip>
+
+## Chaining Methods
+
+Backbone Collections support method chaining for complex queries:
+
+```javascript
+const airlines = require('airline-codes');
+
+// Chain filter and map
+const usAirlineNames = airlines
+  .chain()
+  .filter(a => a.get('country') === 'United States')
+  .map(a => a.get('name'))
+  .value();
+
+console.log(usAirlineNames.slice(0, 5));
+
+// Complex chain
+const europeanIATACodes = airlines
+  .chain()
+  .filter(a => {
+    const country = a.get('country');
+    return ['United Kingdom', 'France', 'Germany', 'Spain', 'Italy']
+      .includes(country);
+  })
+  .map(a => ({
+    code: a.get('iata'),
+    name: a.get('name'),
+    country: a.get('country')
+  }))
+  .filter(obj => obj.code && obj.code.length === 2)
+  .value();
+
+console.log(`${europeanIATACodes.length} European airlines with IATA codes`);
+```
+
+<Accordion title="Complete Example: Build a Search System">
+  ```javascript
+  const airlines = require('airline-codes');
+
+  class AirlineSearch {
+    constructor() {
+      this.airlines = airlines;
+    }
+
+    // Search by any code type
+    findByCode(code) {
+      code = code.toUpperCase();
+      
+      // Try IATA first (2 chars)
+      if (code.length === 2) {
+        const result = this.airlines.findWhere({ iata: code });
+        if (result) return result.toJSON();
+      }
+      
+      // Try ICAO (3-4 chars)
+      const result = this.airlines.findWhere({ icao: code });
+      return result ? result.toJSON() : null;
+    }
+
+    // Search by name (partial match)
+    findByName(query) {
+      query = query.toLowerCase();
+      return this.airlines
+        .filter(a => a.get('name').toLowerCase().includes(query))
+        .map(a => a.toJSON());
+    }
+
+    // Get all airlines from a country
+    getByCountry(country) {
+      return this.airlines
+        .where({ country })
+        .map(a => a.toJSON());
+    }
+
+    // Get statistics
+    getStats() {
+      const byCountry = this.airlines.groupBy(a => a.get('country'));
+      const withIATA = this.airlines.filter(a => {
+        const iata = a.get('iata');
+        return iata && iata.length === 2;
+      });
+
+      return {
+        total: this.airlines.length,
+        countries: Object.keys(byCountry).length,
+        withIATA: withIATA.length,
+        topCountries: Object.entries(byCountry)
+          .sort((a, b) => b[1].length - a[1].length)
+          .slice(0, 5)
+          .map(([country, airlines]) => ({
+            country,
+            count: airlines.length
+          }))
+      };
+    }
+  }
+
+  // Usage
+  const search = new AirlineSearch();
+
+  console.log(search.findByCode('AA'));
+  console.log(search.findByName('emirates'));
+  console.log(search.getByCountry('Japan'));
+  console.log(search.getStats());
+  ```
+</Accordion>

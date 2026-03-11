@@ -1,0 +1,100 @@
+---
+title: "API Overview"
+description: "Overview of the airline-codes API, main exports, and how to import"
+---
+
+## Main Export
+
+The `airline-codes` package exports a **Backbone Collection** containing airline data. The collection is pre-populated with airline information and sorted alphabetically by airline name.
+
+## Installation
+
+```bash
+npm install airline-codes
+```
+
+## Basic Import
+
+```javascript
+const airlines = require('airline-codes');
+```
+
+Or with ES6 modules:
+
+```javascript
+import airlines from 'airline-codes';
+```
+
+## What You Get
+
+The default export is a Backbone Collection instance that:
+- Contains airline objects with standardized fields
+- Is sorted alphabetically by airline name (via `comparator: 'name'`)
+- Provides all standard Backbone Collection methods
+- Supports querying, filtering, and data manipulation
+
+## Quick Example
+
+```javascript
+const airlines = require('airline-codes');
+
+// Get total number of airlines
+const total = airlines.length;
+console.log(`Total airlines: ${total}`);
+
+// Find a specific airline by IATA code
+const american = airlines.findWhere({ iata: 'AA' });
+console.log(american.get('name')); // "American Airlines"
+
+// Get all US airlines
+const usAirlines = airlines.where({ country: 'United States' });
+console.log(`US airlines: ${usAirlines.length}`);
+
+// Extract all airline names
+const names = airlines.pluck('name');
+console.log(names.slice(0, 5)); // First 5 airline names
+```
+
+## Data Structure
+
+Each airline in the collection is a Backbone Model with the following attributes:
+
+- `id` - Unique identifier
+- `name` - Full airline name
+- `alias` - Alternative name or alias
+- `iata` - IATA airline code (2-letter)
+- `icao` - ICAO airline code (3-letter)
+- `callsign` - Radio callsign
+- `country` - Country of operation
+- `active` - Active status ("Y" or "N")
+
+See [Data Fields](/api/data-fields) for complete field documentation.
+
+## Available Methods
+
+Since the export is a Backbone Collection, you have access to all Backbone Collection methods:
+
+- Query methods: `find`, `findWhere`, `where`, `filter`
+- Access methods: `at`, `get`, `first`, `last`
+- Data extraction: `pluck`, `toJSON`
+- Iteration: `forEach`, `map`, `reduce`
+- And many more...
+
+See [Methods Reference](/api/methods) for complete method documentation.
+
+## TypeScript Support
+
+<Note>
+This package does not currently include TypeScript definitions. You may need to create your own type definitions or use `@types` if available.
+</Note>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Methods" icon="code" href="/api/methods">
+    Explore all available Backbone Collection methods
+  </Card>
+  <Card title="Data Fields" icon="table" href="/api/data-fields">
+    Learn about airline object fields and data types
+  </Card>
+</CardGroup>

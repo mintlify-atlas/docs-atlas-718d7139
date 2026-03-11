@@ -1,0 +1,81 @@
+---
+title: "Introduction"
+description: "A comprehensive JavaScript library for airline code lookups with IATA and ICAO codes from OpenFlights.org"
+---
+
+## What is airline-codes?
+
+The `airline-codes` package provides a comprehensive database of airline information including IATA codes, ICAO codes, callsigns, and country data. All data is sourced from [OpenFlights.org](https://openflights.org) and automatically synced weekly to ensure accuracy.
+
+The package wraps airline data in a Backbone Collection interface, giving you access to powerful query and manipulation methods out of the box.
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="IATA & ICAO Codes" icon="plane">
+    Complete database of airline IATA and ICAO codes with associated metadata
+  </Card>
+  <Card title="Backbone Collection" icon="database">
+    Leverages Backbone.js Collection API for familiar and powerful data operations
+  </Card>
+  <Card title="Auto-Updated Data" icon="rotate">
+    Airline data automatically synced weekly from OpenFlights.org
+  </Card>
+  <Card title="Zero Configuration" icon="bolt">
+    Works immediately after install with no setup required
+  </Card>
+</CardGroup>
+
+## Data Structure
+
+Each airline object in the collection contains the following fields:
+
+- **id** - Unique OpenFlights identifier
+- **name** - Full airline name
+- **alias** - Alternative name or abbreviation
+- **iata** - IATA code (2-character)
+- **icao** - ICAO code (3-character)
+- **callsign** - Radio callsign
+- **country** - Country of registration
+- **active** - Operating status ("Y" or "N")
+
+## Use Cases
+
+<Steps>
+  <Step title="Flight Booking Systems">
+    Look up airline information by IATA code to display full airline names and details in booking interfaces
+  </Step>
+  <Step title="Travel Applications">
+    Validate airline codes and retrieve metadata for itinerary management
+  </Step>
+  <Step title="Data Analysis">
+    Filter and analyze airline data by country, status, or other attributes
+  </Step>
+  <Step title="Autocomplete & Search">
+    Build airline search and autocomplete features with the Collection's query methods
+  </Step>
+</Steps>
+
+## Quick Example
+
+```javascript
+const airlines = require('airline-codes');
+
+// Find an airline by IATA code
+const westjet = airlines.findWhere({ iata: 'WS' });
+console.log(westjet.get('name'));
+// => Westjet
+
+// Get all US airlines
+const usAirlines = airlines.where({ country: 'United States' });
+console.log(usAirlines.length);
+// => 245
+```
+
+<Note>
+  The package uses Backbone Collections under the hood, so all standard Backbone Collection methods like `findWhere`, `where`, `at`, `filter`, and `sort` are available.
+</Note>
+
+## Data Source
+
+Airline data is sourced from the [jpatokal/openflights](https://github.com/jpatokal/openflights) repository, which maintains one of the most comprehensive open databases of airline information available.

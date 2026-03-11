@@ -1,97 +1,100 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Airline Codes"
+description: "Lightweight npm dataset for airline IATA/ICAO code lookups with Backbone Collection interface"
 ---
 
-## Setting up
+<div style={{
+  background: 'linear-gradient(135deg, #020627 0%, #11161e 100%)',
+  borderRadius: '12px',
+  padding: '3rem 2rem',
+  marginBottom: '2rem',
+  border: '1px solid rgba(96,99,146,0.3)'
+}}>
+  <h1 style={{
+    fontSize: '48px',
+    fontWeight: '700',
+    color: '#ffffff',
+    marginBottom: '1rem',
+    marginTop: 0
+  }}>Airline Codes</h1>
+  <p style={{
+    fontSize: '20px',
+    color: 'rgba(255,255,255,0.8)',
+    marginBottom: '2rem',
+    maxWidth: '600px'
+  }}>
+    Fast, lightweight npm package for airline IATA and ICAO code lookups with a powerful Backbone Collection interface.
+  </p>
+  <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+    <a href="/quickstart" style={{
+      background: '#238636',
+      color: '#ffffff',
+      padding: '0.75rem 1.5rem',
+      borderRadius: '6px',
+      textDecoration: 'none',
+      fontWeight: '600',
+      display: 'inline-block'
+    }}>Get Started</a>
+    <a href="https://github.com/npow/airline-codes" style={{
+      background: 'transparent',
+      color: '#ffffff',
+      padding: '0.75rem 1.5rem',
+      borderRadius: '6px',
+      border: '1px solid rgba(255,255,255,0.3)',
+      textDecoration: 'none',
+      fontWeight: '600',
+      display: 'inline-block'
+    }}>View on GitHub</a>
+  </div>
+</div>
 
-Get your documentation site up and running in minutes.
+## Features
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="IATA & ICAO Lookups" icon="plane" href="/usage/basic-queries">
+    Query airlines by IATA or ICAO codes with built-in methods
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Backbone Collection" icon="layer-group" href="/usage/collection-methods">
+    Leverage Backbone Collection methods like findWhere, sort, and filter
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Always Up-to-Date" icon="rotate" href="/data/updating-data">
+    Automatic weekly data synchronization from OpenFlights.org
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Data Quality" icon="circle-check" href="/data/data-corrections">
+    Country name normalization and data quality corrections built-in
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## Quick Example
 
-Everything you need to create world-class documentation.
+```javascript
+const airlines = require('airline-codes');
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+// Find an airline by IATA code
+const westjet = airlines.findWhere({ iata: 'WS' });
+console.log(westjet.get('name'));
+// => "Westjet"
 
-## Need inspiration?
+// Find by ICAO code
+const delta = airlines.findWhere({ icao: 'DAL' });
+console.log(delta.get('name'));
+// => "Delta Air Lines"
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+// Get all active airlines
+const active = airlines.where({ active: 'Y' });
+console.log(active.length);
+```
+
+## Get Started
+
+<CardGroup cols={3}>
+  <Card title="Installation" icon="download" href="/installation">
+    Install via npm, yarn, or pnpm
+  </Card>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Get up and running in 60 seconds
+  </Card>
+  <Card title="API Reference" icon="book" href="/api/overview">
+    Explore the complete API
+  </Card>
+</CardGroup>

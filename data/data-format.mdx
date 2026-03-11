@@ -1,0 +1,364 @@
+---
+title: "Data Format"
+description: "Understanding the structure of airlines.json and the airline data fields"
+---
+
+The airline-codes package provides airline data in both CSV (`airlines.dat`) and JSON (`airlines.json`) formats. This page documents the structure and fields used throughout the package.
+
+## File Formats
+
+The package includes two data files:
+
+| File | Format | Purpose | Source |
+|------|--------|---------|--------|
+| `airlines.dat` | CSV | Intermediate format with corrections applied | OpenFlights.org |
+| `airlines.json` | JSON | Final format consumed by the npm package | Generated from airlines.dat |
+
+<Info>
+Most users will interact with `airlines.json` through the package API. The CSV file is primarily used during the data update pipeline.
+</Info>
+
+## JSON Structure
+
+The `airlines.json` file contains an array of airline objects. Here's an example:
+
+```json
+[
+  {
+    "id": "24",
+    "name": "American Airlines",
+    "alias": "",
+    "iata": "AA",
+    "icao": "AAL",
+    "callsign": "AMERICAN",
+    "country": "United States",
+    "active": "Y"
+  },
+  {
+    "id": "137",
+    "name": "Air France",
+    "alias": "",
+    "iata": "AF",
+    "icao": "AFR",
+    "callsign": "AIRFRANS",
+    "country": "France",
+    "active": "Y"
+  }
+]
+```
+
+## Field Definitions
+
+Each airline record contains 8 fields:
+
+### `id`
+<ResponseField name="id" type="string" required>
+  Unique OpenFlights airline identifier. This ID is stable across updates and used for referencing specific corrections in `normalize.js`.
+</ResponseField>
+
+**Example values:** `"24"`, `"137"`, `"439"`
+
+<Note>
+The ID is stored as a string in JSON for consistency with the CSV format, even though it represents a numeric identifier.
+</Note>
+
+### `name`
+<ResponseField name="name" type="string" required>
+  Full official name of the airline.
+</ResponseField>
+
+**Example values:** 
+- `"American Airlines"`
+- `"Air France"`
+- `"Private flight"`
+
+### `alias`
+<ResponseField name="alias" type="string">
+  Alternative name or brand name for the airline. Often empty.
+</ResponseField>
+
+**Example values:** `""`, `"Aeroflot"`
+
+<Info>
+Most airlines don't have an alias value. This field is preserved from the OpenFlights schema but is rarely populated.
+</Info>
+
+### `iata`
+<ResponseField name="iata" type="string">
+  Two-character IATA airline designator code. May be empty or contain special values like `"-"` or `"N/A"` for airlines without IATA codes.
+</ResponseField>
+
+**Example values:** `"AA"`, `"AF"`, `"DL"`, `"-"`
+
+**Special cases:**
+- Empty string: No IATA code assigned
+- `"-"`: Explicitly marked as having no IATA code
+- `"N/A"`: Not applicable (e.g., private flights)
+
+<Warning>
+IATA codes are not always unique. Some defunct airlines may share codes with active airlines. The package sorts active airlines first to handle this.
+</Warning>
+
+### `icao`
+<ResponseField name="icao" type="string">
+  Three or four-character ICAO airline designator code. May be empty for airlines without ICAO codes.
+</ResponseField>
+
+**Example values:** `"AAL"`, `"AFR"`, `"DAL"`, `"N/A"`
+
+### `callsign`
+<ResponseField name="callsign" type="string">
+  Radio callsign used by the airline. May be empty.
+</ResponseField>
+
+**Example values:** `"AMERICAN"`, `"AIRFRANS"`, `"DELTA"`
+
+Callsigns are used in air traffic control communications and may differ from the airline name.
+
+### `country`
+<ResponseField name="country" type="string">
+  Country where the airline is registered. Uses standardized country names after applying `COUNTRY_CORRECTIONS`.
+</ResponseField>
+
+**Example values:** 
+- `"United States"`
+- `"South Korea"` (not "Republic of Korea")
+- `"Hong Kong"`
+- `"Russia"` (not "Russian Federation")
+
+<Note>
+Country names are normalized to commonly-recognized names rather than official names. See [Data Corrections](/data/data-corrections) for the full mapping.
+</Note>
+
+### `active`
+<ResponseField name="active" type="string" required>
+  Whether the airline is currently operational. Values are `"Y"` (active) or `"N"` (inactive).
+</ResponseField>
+
+**Values:**
+- `"Y"` - Airline is currently operational
+- `"N"` - Airline is defunct, merged, or no longer operating
+
+<Info>
+The package sorts active airlines first in `airlines.json` so that lookups by IATA/ICAO code prioritize active airlines over defunct ones with the same code.
+</Info>
+
+## CSV Format
+
+The `airlines.dat` file uses a simple CSV format without headers:
+
+```csv
+1,Private flight,,-,N/A,,,Y
+24,American Airlines,,AA,AAL,AMERICAN,United States,Y
+137,Air France,,AF,AFR,AIRFRANS,France,Y
+```
+
+### Column Order
+
+Columns appear in this order:
+
+```javascript convert.js:6
+var columns = ['id', 'name', 'alias', 'iata', 'icao', 'callsign', 'country', 'active'];
+```
+
+1. ID
+2. Name
+3. Alias
+4. IATA
+5. ICAO
+6. Callsign
+7. Country
+8. Active
+
+<Warning>
+The CSV has no header row. Tools reading the file must know the column positions.
+</Warning>
+
+## Data Conversion Process
+
+The `convert.js` script transforms CSV to JSON:
+
+<Steps>
+  <Step title="Read CSV">
+    Read `airlines.dat` and parse it with the csv library:
+    
+    ```javascript convert.js:8
+    var content = fs.readFileSync('airlines.dat', 'utf8');
+    ```
+  </Step>
+  
+  <Step title="Map to Objects">
+    Convert each CSV row to an object using the column names:
+    
+    ```javascript convert.js:13-15
+    var airlines = records.map(function(data) {
+      return _.zipObject(columns, data);
+    });
+    ```
+  </Step>
+  
+  <Step title="Sort by Active Status">
+    Sort so active airlines appear first:
+    
+    ```javascript convert.js:18-19
+    // Sort active airlines first so they take precedence over inactive ones
+    airlines = _.sortBy(airlines, function(a) { return a.active === 'Y' ? 0 : 1; });
+    ```
+  </Step>
+  
+  <Step title="Write JSON">
+    Stream the sorted array to `airlines.json`:
+    
+    ```javascript convert.js:21-25
+    var writeStream = fs.createWriteStream('airlines.json');
+    var jsonStream = JSONStream.stringify();
+    jsonStream.pipe(writeStream);
+    airlines.forEach(function(a) { jsonStream.write(a); });
+    ```
+  </Step>
+</Steps>
+
+<Info>
+The sorting by active status is crucial for lookups. When searching for an airline by IATA code like "AA", you want the active American Airlines, not a defunct airline that once used that code.
+</Info>
+
+## Example Records
+
+Here are some real examples from the data:
+
+<CodeGroup>
+```json Active Major Airline
+{
+  "id": "24",
+  "name": "American Airlines",
+  "alias": "",
+  "iata": "AA",
+  "icao": "AAL",
+  "callsign": "AMERICAN",
+  "country": "United States",
+  "active": "Y"
+}
+```
+
+```json Low-Cost Carrier
+{
+  "id": "35",
+  "name": "Allegiant Air",
+  "alias": "",
+  "iata": "G4",
+  "icao": "AAY",
+  "callsign": "ALLEGIANT",
+  "country": "United States",
+  "active": "Y"
+}
+```
+
+```json International Airline
+{
+  "id": "28",
+  "name": "Asiana Airlines",
+  "alias": "",
+  "iata": "OZ",
+  "icao": "AAR",
+  "callsign": "ASIANA",
+  "country": "South Korea",
+  "active": "Y"
+}
+```
+
+```json No IATA Code
+{
+  "id": "47",
+  "name": "Aerocenter",
+  "alias": "",
+  "iata": "",
+  "icao": "ACR",
+  "callsign": "",
+  "country": "United States",
+  "active": "Y"
+}
+```
+
+```json Defunct Airline
+{
+  "id": "1881",
+  "name": "Continental Airlines",
+  "alias": "",
+  "iata": "CO",
+  "icao": "COA",
+  "callsign": "CONTINENTAL",
+  "country": "United States",
+  "active": "N"
+}
+```
+</CodeGroup>
+
+## Data Statistics
+
+The airlines.json file typically contains:
+
+- **~6,000+ total airline records**
+- **~1,000+ active airlines** (`active: "Y"`)
+- **~5,000+ inactive airlines** (`active: "N"`)
+
+You can check the current statistics:
+
+<CodeGroup>
+```bash Total Count
+cat airlines.json | jq '. | length'
+```
+
+```bash Active Airlines
+cat airlines.json | jq '[.[] | select(.active == "Y")] | length'
+```
+
+```bash Airlines with IATA Codes
+cat airlines.json | jq '[.[] | select(.iata != "" and .iata != "-" and .iata != "N/A")] | length'
+```
+</CodeGroup>
+
+## Using the Data in Code
+
+The package wraps the JSON in a Backbone Collection for easy querying:
+
+```javascript
+var airlines = require('airline-codes');
+
+// Find by IATA code
+airlines.findWhere({ iata: 'AA' });
+//=> Returns American Airlines object
+
+// Find by country
+airlines.where({ country: 'United States', active: 'Y' });
+//=> Returns all active US airlines
+
+// Get raw JSON
+airlines.toJSON();
+//=> Returns the full array of airline objects
+```
+
+You can also import the JSON directly:
+
+```javascript
+var airlinesData = require('airline-codes/airlines.json');
+
+// Now airlinesData is the raw array
+console.log(airlinesData[0]);
+```
+
+<Note>
+See the [Basic Usage](/getting-started/basic-usage) guide for more examples of working with the data.
+</Note>
+
+## Data Source Attribution
+
+All airline data originates from:
+
+- **Source:** [OpenFlights.org](https://openflights.org)
+- **Repository:** [jpatokal/openflights](https://github.com/jpatokal/openflights)
+- **License:** Open Database License (ODbL)
+- **Updates:** Community-maintained, synced weekly
+
+<Info>
+This package applies local corrections for standardization but does not claim ownership of the underlying data. All credit goes to the OpenFlights community.
+</Info>

@@ -1,0 +1,232 @@
+---
+title: "Basic Queries"
+description: "Learn how to query airlines by IATA code, ICAO code, and other attributes"
+---
+
+The airline-codes package provides a Backbone Collection interface for querying airline data. This page demonstrates how to perform basic queries using real airline codes.
+
+## Query by IATA Code
+
+IATA codes are two-letter airline designators. Use the `findWhere` method to find an airline by its IATA code:
+
+```javascript
+const airlines = require('airline-codes');
+
+// Find American Airlines by IATA code
+const american = airlines.findWhere({ iata: 'AA' });
+console.log(american.get('name')); // "American Airlines"
+console.log(american.get('callsign')); // "AMERICAN"
+console.log(american.get('country')); // "United States"
+```
+
+<Info>
+  IATA codes are the most commonly used airline identifiers in booking systems and flight schedules.
+</Info>
+
+### More IATA Query Examples
+
+<Tabs>
+  <Tab title="Delta Air Lines">
+    ```javascript
+    const delta = airlines.findWhere({ iata: 'DL' });
+    console.log(delta.toJSON());
+    // {
+    //   "id": "2009",
+    //   "name": "Delta Air Lines",
+    //   "alias": "",
+    //   "iata": "DL",
+    //   "icao": "DAL",
+    //   "callsign": "DELTA",
+    //   "country": "United States",
+    //   "active": "Y"
+    // }
+    ```
+  </Tab>
+  <Tab title="Emirates">
+    ```javascript
+    const emirates = airlines.findWhere({ iata: 'EK' });
+    console.log(emirates.toJSON());
+    // {
+    //   "id": "2183",
+    //   "name": "Emirates",
+    //   "alias": "Emirates Airlines",
+    //   "iata": "EK",
+    //   "icao": "UAE",
+    //   "callsign": "EMIRATES",
+    //   "country": "United Arab Emirates",
+    //   "active": "Y"
+    // }
+    ```
+  </Tab>
+  <Tab title="Air France">
+    ```javascript
+    const airFrance = airlines.findWhere({ iata: 'AF' });
+    console.log(airFrance.toJSON());
+    // {
+    //   "id": "137",
+    //   "name": "Air France",
+    //   "alias": "",
+    //   "iata": "AF",
+    //   "icao": "AFR",
+    //   "callsign": "AIRFRANS",
+    //   "country": "France",
+    //   "active": "Y"
+    // }
+    ```
+  </Tab>
+</Tabs>
+
+## Query by ICAO Code
+
+ICAO codes are four-letter airline designators used in air traffic control:
+
+```javascript
+const airlines = require('airline-codes');
+
+// Find British Airways by ICAO code
+const britishAirways = airlines.findWhere({ icao: 'BAW' });
+console.log(britishAirways.get('name')); // "British Airways"
+console.log(britishAirways.get('iata')); // "BA"
+console.log(britishAirways.get('callsign')); // "SPEEDBIRD"
+```
+
+<Note>
+  Some airlines may have empty ICAO codes in the database. Always check if the result exists before accessing properties.
+</Note>
+
+### ICAO Query Examples
+
+```javascript
+// Find Cathay Pacific by ICAO
+const cathay = airlines.findWhere({ icao: 'CPA' });
+console.log(cathay.get('name')); // "Cathay Pacific"
+console.log(cathay.get('country')); // "Hong Kong"
+
+// Find Lufthansa by ICAO
+const lufthansa = airlines.findWhere({ icao: 'DLH' });
+if (lufthansa) {
+  console.log(lufthansa.get('iata')); // "LH"
+  console.log(lufthansa.get('callsign')); // "LUFTHANSA"
+}
+```
+
+## Query by Airline Name
+
+You can also search by the airline's full name:
+
+```javascript
+const airlines = require('airline-codes');
+
+// Find by exact name match
+const ana = airlines.findWhere({ name: 'All Nippon Airways' });
+console.log(ana.get('iata')); // "NH"
+console.log(ana.get('icao')); // "ANA"
+console.log(ana.get('callsign')); // "ALL NIPPON"
+```
+
+<Accordion title="Complete Example with Error Handling">
+  ```javascript
+  const airlines = require('airline-codes');
+
+  function findAirlineByIATA(code) {
+    const airline = airlines.findWhere({ iata: code.toUpperCase() });
+    
+    if (!airline) {
+      console.log(`No airline found with IATA code: ${code}`);
+      return null;
+    }
+    
+    return {
+      name: airline.get('name'),
+      iata: airline.get('iata'),
+      icao: airline.get('icao'),
+      callsign: airline.get('callsign'),
+      country: airline.get('country')
+    };
+  }
+
+  // Usage examples
+  console.log(findAirlineByIATA('AA')); // American Airlines
+  console.log(findAirlineByIATA('BA')); // British Airways
+  console.log(findAirlineByIATA('QF')); // Qantas (if exists)
+  console.log(findAirlineByIATA('ZZ')); // null - not found
+  ```
+</Accordion>
+
+## Query by Country
+
+Find all airlines from a specific country using the `where` method:
+
+```javascript
+const airlines = require('airline-codes');
+
+// Find all airlines from Japan
+const japaneseAirlines = airlines.where({ country: 'Japan' });
+console.log(`Found ${japaneseAirlines.length} Japanese airlines`);
+
+japaneseAirlines.forEach(airline => {
+  console.log(`${airline.get('name')} (${airline.get('iata')})`);
+});
+// Output:
+// All Nippon Airways (NH)
+// Air Japan (NQ)
+// Ibex Airlines (FW)
+// JAL Express (JC)
+// JALways (JO)
+// Hokkaido International Airlines (HD)
+// ...
+```
+
+<Warning>
+  The `where` method returns an array of models, while `findWhere` returns a single model or undefined.
+</Warning>
+
+## Query by Callsign
+
+Air traffic control uses callsigns to identify aircraft:
+
+```javascript
+const airlines = require('airline-codes');
+
+// Find airline by callsign
+const speedbird = airlines.findWhere({ callsign: 'SPEEDBIRD' });
+console.log(speedbird.get('name')); // "British Airways"
+
+// Find by callsign "QANTAS"
+const qantas = airlines.findWhere({ callsign: 'QANTAS' });
+if (qantas) {
+  console.log(qantas.get('iata')); // "QF"
+  console.log(qantas.get('country')); // "Australia"
+}
+```
+
+## Handling Missing Data
+
+Some airline records may have empty values for certain fields:
+
+```javascript
+const airlines = require('airline-codes');
+
+// Some airlines don't have IATA codes
+const airline = airlines.findWhere({ name: 'Aerocenter' });
+console.log(airline.get('iata')); // "" (empty string)
+console.log(airline.get('icao')); // "ACR"
+
+// Always check before using
+function getAirlineCode(airline) {
+  const iata = airline.get('iata');
+  const icao = airline.get('icao');
+  
+  if (iata && iata !== '' && iata !== '-' && iata !== 'N/A') {
+    return iata;
+  } else if (icao && icao !== '') {
+    return icao;
+  }
+  
+  return 'Unknown';
+}
+```
+
+<Tip>
+  Check for empty strings, dashes ("-"), and "N/A" values when working with airline codes.
+</Tip>

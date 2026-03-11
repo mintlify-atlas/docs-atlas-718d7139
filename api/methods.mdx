@@ -1,0 +1,531 @@
+---
+title: "Collection Methods"
+description: "Complete reference of all Backbone Collection methods available on the airlines collection"
+---
+
+## Overview
+
+The `airline-codes` package exports a Backbone Collection, giving you access to all standard Backbone Collection methods. This page documents the most commonly used methods with airline-specific examples.
+
+## Query Methods
+
+### findWhere
+
+Find the first model that matches the specified attributes.
+
+<ParamField path="attributes" type="object" required>
+  Object containing attribute key-value pairs to match
+</ParamField>
+
+<ResponseField name="return" type="Model | undefined">
+  Returns the first matching Backbone Model, or `undefined` if not found
+</ResponseField>
+
+```javascript
+const airlines = require('airline-codes');
+
+// Find by IATA code
+const delta = airlines.findWhere({ iata: 'DL' });
+console.log(delta.get('name')); // "Delta Air Lines"
+
+// Find by ICAO code
+const lufthansa = airlines.findWhere({ icao: 'DLH' });
+console.log(lufthansa.get('country')); // "Germany"
+
+// Find by multiple attributes
+const airline = airlines.findWhere({ 
+  country: 'United States', 
+  iata: 'AA' 
+});
+```
+
+### where
+
+Get all models that match the specified attributes.
+
+<ParamField path="attributes" type="object" required>
+  Object containing attribute key-value pairs to match
+</ParamField>
+
+<ResponseField name="return" type="Array<Model>">
+  Returns an array of matching Backbone Models
+</ResponseField>
+
+```javascript
+// Get all airlines from a specific country
+const japaneseAirlines = airlines.where({ country: 'Japan' });
+console.log(`Japanese airlines: ${japaneseAirlines.length}`);
+
+// Get all active airlines
+const activeAirlines = airlines.where({ active: 'Y' });
+
+// Results are Backbone Models
+japaneseAirlines.forEach(model => {
+  console.log(model.get('name'));
+});
+```
+
+### filter
+
+Filter the collection using a custom predicate function.
+
+<ParamField path="predicate" type="function" required>
+  Function that returns `true` for models to include
+</ParamField>
+
+<ResponseField name="return" type="Array<Model>">
+  Returns an array of Backbone Models that pass the test
+</ResponseField>
+
+```javascript
+// Find airlines with IATA codes starting with 'A'
+const aAirlines = airlines.filter(model => {
+  const iata = model.get('iata');
+  return iata && iata.startsWith('A');
+});
+
+// Find airlines with callsigns
+const withCallsigns = airlines.filter(model => {
+  const callsign = model.get('callsign');
+  return callsign && callsign.length > 0;
+});
+
+// Complex filtering
+const usCarriers = airlines.filter(model => {
+  return model.get('country') === 'United States' &&
+         model.get('active') === 'Y';
+});
+```
+
+### find
+
+Find the first model that passes a predicate function.
+
+<ParamField path="predicate" type="function" required>
+  Function that returns `true` for the model to find
+</ParamField>
+
+<ResponseField name="return" type="Model | undefined">
+  Returns the first matching Backbone Model, or `undefined`
+</ResponseField>
+
+```javascript
+// Find first airline with specific ICAO code
+const airline = airlines.find(model => {
+  return model.get('icao') === 'UAL';
+});
+
+// Find first airline with long name
+const longName = airlines.find(model => {
+  return model.get('name').length > 30;
+});
+```
+
+## Access Methods
+
+### at
+
+Get a model at a specific index position.
+
+<ParamField path="index" type="number" required>
+  Zero-based index position
+</ParamField>
+
+<ResponseField name="return" type="Model | undefined">
+  Returns the Backbone Model at the specified index
+</ResponseField>
+
+```javascript
+// Get the first airline (alphabetically by name)
+const first = airlines.at(0);
+console.log(first.get('name'));
+
+// Get the 10th airline
+const tenth = airlines.at(9);
+
+// Get the last airline
+const last = airlines.at(airlines.length - 1);
+```
+
+### get
+
+Get a model by its `id` attribute.
+
+<ParamField path="id" type="string | number" required>
+  The id of the model to retrieve
+</ParamField>
+
+<ResponseField name="return" type="Model | undefined">
+  Returns the Backbone Model with the specified id
+</ResponseField>
+
+```javascript
+// Get airline by id
+const airline = airlines.get('24');
+console.log(airline.get('name')); // "American Airlines"
+
+// Check if exists
+if (airlines.get('999')) {
+  console.log('Found');
+} else {
+  console.log('Not found');
+}
+```
+
+### first
+
+Get the first model in the collection.
+
+<ResponseField name="return" type="Model | undefined">
+  Returns the first Backbone Model in the collection
+</ResponseField>
+
+```javascript
+// Get first airline (alphabetically by name due to comparator)
+const first = airlines.first();
+console.log(first.get('name'));
+```
+
+### last
+
+Get the last model in the collection.
+
+<ResponseField name="return" type="Model | undefined">
+  Returns the last Backbone Model in the collection
+</ResponseField>
+
+```javascript
+// Get last airline (alphabetically by name)
+const last = airlines.last();
+console.log(last.get('name'));
+```
+
+## Data Extraction Methods
+
+### pluck
+
+Extract a specific attribute from all models.
+
+<ParamField path="attribute" type="string" required>
+  Name of the attribute to extract
+</ParamField>
+
+<ResponseField name="return" type="Array<any>">
+  Returns an array of attribute values
+</ResponseField>
+
+```javascript
+// Get all airline names
+const names = airlines.pluck('name');
+console.log(names); // ['1Time Airline', '40-Mile Air', ...]
+
+// Get all IATA codes
+const iataCodes = airlines.pluck('iata');
+
+// Get all countries
+const countries = airlines.pluck('country');
+const uniqueCountries = [...new Set(countries)];
+console.log(`Airlines from ${uniqueCountries.length} countries`);
+```
+
+### toJSON
+
+Convert the entire collection to a plain JavaScript array.
+
+<ResponseField name="return" type="Array<object>">
+  Returns an array of plain JavaScript objects
+</ResponseField>
+
+```javascript
+// Export as plain JSON
+const airlinesData = airlines.toJSON();
+console.log(airlinesData[0]);
+// {
+//   id: '1',
+//   name: 'Private flight',
+//   alias: '',
+//   iata: '-',
+//   icao: 'N/A',
+//   callsign: '',
+//   country: '',
+//   active: 'Y'
+// }
+
+// Use with JSON.stringify
+const json = JSON.stringify(airlines.toJSON(), null, 2);
+
+// Filter then convert to JSON
+const usAirlines = airlines.where({ country: 'United States' });
+const usData = usAirlines.map(model => model.toJSON());
+```
+
+## Iteration Methods
+
+### forEach
+
+Iterate over each model in the collection.
+
+<ParamField path="callback" type="function" required>
+  Function called for each model with arguments: `(model, index)`
+</ParamField>
+
+```javascript
+// Log all airline names
+airlines.forEach((model, index) => {
+  console.log(`${index + 1}. ${model.get('name')}`);
+});
+
+// Collect specific data
+const summary = [];
+airlines.forEach(model => {
+  summary.push({
+    name: model.get('name'),
+    code: model.get('iata')
+  });
+});
+```
+
+### map
+
+Transform each model using a function.
+
+<ParamField path="callback" type="function" required>
+  Function called for each model that returns the transformed value
+</ParamField>
+
+<ResponseField name="return" type="Array<any>">
+  Returns an array of transformed values
+</ResponseField>
+
+```javascript
+// Create simplified airline objects
+const simplified = airlines.map(model => {
+  return {
+    name: model.get('name'),
+    iata: model.get('iata'),
+    country: model.get('country')
+  };
+});
+
+// Create display labels
+const labels = airlines.map(model => {
+  const name = model.get('name');
+  const iata = model.get('iata');
+  return `${name} (${iata})`;
+});
+```
+
+### reduce
+
+Reduce the collection to a single value.
+
+<ParamField path="callback" type="function" required>
+  Function called for each model with arguments: `(accumulator, model)`
+</ParamField>
+
+<ParamField path="initialValue" type="any">
+  Initial value for the accumulator
+</ParamField>
+
+<ResponseField name="return" type="any">
+  Returns the final accumulated value
+</ResponseField>
+
+```javascript
+// Count airlines by country
+const byCountry = airlines.reduce((acc, model) => {
+  const country = model.get('country');
+  acc[country] = (acc[country] || 0) + 1;
+  return acc;
+}, {});
+
+console.log(byCountry['United States']); // Number of US airlines
+
+// Build a lookup map by IATA code
+const iataMap = airlines.reduce((map, model) => {
+  const iata = model.get('iata');
+  if (iata && iata !== '-') {
+    map[iata] = model.toJSON();
+  }
+  return map;
+}, {});
+
+console.log(iataMap['AA']); // American Airlines data
+```
+
+### some
+
+Check if any model passes a predicate test.
+
+<ParamField path="predicate" type="function" required>
+  Function that returns `true` or `false` for each model
+</ParamField>
+
+<ResponseField name="return" type="boolean">
+  Returns `true` if any model passes the test
+</ResponseField>
+
+```javascript
+// Check if any airline is from Iceland
+const hasIcelandic = airlines.some(model => {
+  return model.get('country') === 'Iceland';
+});
+
+// Check if any airline has a specific IATA code
+const hasCode = airlines.some(model => {
+  return model.get('iata') === 'XX';
+});
+```
+
+### every
+
+Check if all models pass a predicate test.
+
+<ParamField path="predicate" type="function" required>
+  Function that returns `true` or `false` for each model
+</ParamField>
+
+<ResponseField name="return" type="boolean">
+  Returns `true` if all models pass the test
+</ResponseField>
+
+```javascript
+// Check if all airlines have an id
+const allHaveIds = airlines.every(model => {
+  return model.get('id') !== undefined;
+});
+
+// Check if all airlines are active
+const allActive = airlines.every(model => {
+  return model.get('active') === 'Y';
+});
+```
+
+## Sorting Methods
+
+### sortBy
+
+Sort models by a specific attribute or function.
+
+<ParamField path="attribute" type="string | function" required>
+  Attribute name or iterator function to sort by
+</ParamField>
+
+<ResponseField name="return" type="Array<Model>">
+  Returns a sorted array of Backbone Models
+</ResponseField>
+
+<Note>
+This returns a new sorted array without modifying the original collection. The collection itself is already sorted by `name` due to the comparator.
+</Note>
+
+```javascript
+// Sort by IATA code
+const byIata = airlines.sortBy('iata');
+
+// Sort by custom function
+const byCallsignLength = airlines.sortBy(model => {
+  return model.get('callsign').length;
+});
+
+// Results are still Backbone Models
+byIata.forEach(model => {
+  console.log(model.get('iata'));
+});
+```
+
+## Utility Methods
+
+### size / length
+
+Get the number of models in the collection.
+
+<ResponseField name="return" type="number">
+  Returns the total count of models
+</ResponseField>
+
+```javascript
+// Get total count
+const total = airlines.length;
+console.log(`Total airlines: ${total}`);
+
+// Also available as method
+const count = airlines.size();
+```
+
+### isEmpty
+
+Check if the collection has no models.
+
+<ResponseField name="return" type="boolean">
+  Returns `true` if the collection is empty
+</ResponseField>
+
+```javascript
+if (airlines.isEmpty()) {
+  console.log('No airlines found');
+} else {
+  console.log(`Found ${airlines.length} airlines`);
+}
+```
+
+### indexOf
+
+Get the index of a specific model.
+
+<ParamField path="model" type="Model" required>
+  The Backbone Model to find
+</ParamField>
+
+<ResponseField name="return" type="number">
+  Returns the index, or -1 if not found
+</ResponseField>
+
+```javascript
+const airline = airlines.findWhere({ iata: 'AA' });
+const index = airlines.indexOf(airline);
+console.log(`American Airlines is at index ${index}`);
+```
+
+## Method Chaining
+
+Many Backbone methods support chaining through the `chain()` method:
+
+```javascript
+const usAirlineNames = airlines.chain()
+  .filter(model => model.get('country') === 'United States')
+  .filter(model => model.get('active') === 'Y')
+  .sortBy('name')
+  .map(model => model.get('name'))
+  .value();
+
+console.log(usAirlineNames);
+```
+
+## Working with Models
+
+Once you retrieve a model from the collection, you can access its attributes:
+
+```javascript
+const airline = airlines.findWhere({ iata: 'BA' });
+
+// Get individual attributes
+const name = airline.get('name');
+const country = airline.get('country');
+const icao = airline.get('icao');
+
+// Get all attributes as plain object
+const data = airline.toJSON();
+console.log(data);
+
+// Check if attribute exists
+if (airline.has('callsign')) {
+  console.log(airline.get('callsign'));
+}
+```
+
+## Next Steps
+
+<Card title="Data Fields" icon="table" href="/api/data-fields">
+  Learn about all available fields in airline objects
+</Card>

@@ -1,0 +1,285 @@
+---
+title: "Data Corrections"
+description: "Understand how country name corrections and data quality fixes are applied to upstream OpenFlights data"
+---
+
+The upstream OpenFlights database uses different naming conventions and occasionally contains data quality issues. The `normalize.js` script applies corrections automatically to ensure consistent, accurate airline data.
+
+## Why Corrections Are Needed
+
+The OpenFlights project is community-maintained and follows its own conventions. This package applies corrections for:
+
+- **Country name standardization** - Converting formal names to commonly-used names
+- **Data corruption fixes** - Correcting fields where data leaked between columns
+- **Duplicate resolution** - Marking defunct airlines that share codes with active ones
+- **Code accuracy** - Fixing incorrect IATA/ICAO codes in upstream data
+
+<Note>
+All corrections are applied transparently via `normalize.js` after fetching upstream data. The original upstream data is never modified directly.
+</Note>
+
+## Country Name Corrections
+
+The `COUNTRY_CORRECTIONS` map standardizes country names from formal/official names to commonly-recognized names:
+
+<Accordion title="View Full COUNTRY_CORRECTIONS Map">
+```javascript normalize.js:14-28
+var COUNTRY_CORRECTIONS = {
+  'Macao':                                   'Macau',
+  'Republic of Korea':                       'South Korea',
+  "Democratic People's Republic of Korea":   'North Korea',
+  'Russian Federation':                      'Russia',
+  'Syrian Arab Republic':                    'Syria',
+  'Hong Kong SAR of China':                  'Hong Kong',
+  'Canadian Territories':                    'Canada',
+  'Macedonia':                               'North Macedonia',
+  'Myanmar':                                 'Myanmar (Burma)',
+  'Burma':                                   'Myanmar (Burma)',
+  'Congo (Kinshasa)':                        'Democratic Republic of the Congo',
+  'Congo (Brazzaville)':                     'Republic of the Congo',
+};
+```
+</Accordion>
+
+### How It Works
+
+During normalization, each airline's country field is checked against the correction map:
+
+```javascript normalize.js:102-106
+// Apply country name corrections
+var countryIdx = 6;
+if (COUNTRY_CORRECTIONS[row[countryIdx]]) {
+  row[countryIdx] = COUNTRY_CORRECTIONS[row[countryIdx]];
+}
+```
+
+### Adding Country Corrections
+
+To add a new country name correction:
+
+<Steps>
+  <Step title="Edit normalize.js">
+    Open `normalize.js` and locate the `COUNTRY_CORRECTIONS` object around line 15
+  </Step>
+  
+  <Step title="Add Entry">
+    Add your correction to the map:
+    
+    ```javascript
+    var COUNTRY_CORRECTIONS = {
+      'Macao': 'Macau',
+      'Republic of Korea': 'South Korea',
+      // Add your new correction here
+      'Your Upstream Name': 'Your Preferred Name',
+    };
+    ```
+  </Step>
+  
+  <Step title="Re-run Pipeline">
+    Apply the correction to your data:
+    
+    ```bash
+    node normalize.js
+    node convert.js
+    ```
+  </Step>
+</Steps>
+
+<Warning>
+Always use the exact upstream country name as the key (left side) and your preferred name as the value (right side).
+</Warning>
+
+## Per-Airline ID Corrections
+
+The `ID_CORRECTIONS` map applies field-level corrections to specific airlines by their OpenFlights ID. This fixes:
+
+- Field corruption (data leaked between columns)
+- Incorrect active status
+- Wrong IATA/ICAO codes
+- Duplicate entries that cause code collisions
+
+### Structure
+
+```javascript
+var ID_CORRECTIONS = {
+  // Key: airline ID (as string)
+  // Value: object with field overrides
+  '439': { country: 'United States' },
+  '2056': { country: 'Hong Kong' },
+  '4374': { iata: 'GQ' },
+};
+```
+
+Available fields for correction: `name`, `alias`, `iata`, `icao`, `callsign`, `country`, `active`
+
+### Example Corrections
+
+<Accordion title="Data Corruption Fixes">
+Some airlines have callsigns that leaked into the country field:
+
+```javascript normalize.js:34-37
+var ID_CORRECTIONS = {
+  // Alaska Airlines: upstream has country="ALASKA" (callsign leaked into country field)
+  '439':   { country: 'United States' },
+  // Dragonair: upstream has country="DRAGON" (callsign leaked into country field)
+  '2056':  { country: 'Hong Kong' },
+```
+</Accordion>
+
+<Accordion title="Duplicate/Defunct Airlines">
+Airlines incorrectly marked active that share codes with current airlines:
+
+```javascript normalize.js:38-44
+  // Defunct/duplicate airlines incorrectly marked active upstream:
+  '2988':  { active: 'N' },  // Japan Airlines Domestic (dup of JAL, same ICAO JAL)
+  '3384':  { active: 'N' },  // Malmo Aviation (defunct)
+  '3386':  { active: 'N' },  // Malmö Aviation (dup of above, same ICAO SCW)
+  '4264':  { active: 'N' },  // Royal Nepal Airlines (defunct, replaced by Nepal Airlines)
+  '4560':  { active: 'N' },  // Swissair (defunct, dup of Swiss Intl, same ICAO SWR)
+```
+</Accordion>
+
+<Accordion title="IATA Code Collisions">
+Defunct airlines sharing codes with active ones (prevents lookup conflicts):
+
+```javascript normalize.js:45-51
+  // IATA code collision fixes - defunct airlines sharing code with active ones:
+  '595':   { active: 'N' },  // Atlant-Soyuz Airlines (3G) - ceased 2011
+  '19862': { active: 'N' },  // AsiaCargo Express (3G) - rebranded/ceased 2020
+  '2051':  { active: 'N' },  // DonbassAero (5D) - ceased 2013
+  '3432':  { active: 'N' },  // Maxair (8M) - ceased 2005
+  '3570':  { active: 'N' },  // Myanmar Airways International (8M) - duplicate entry
+```
+</Accordion>
+
+<Accordion title="Incorrect IATA Codes">
+Wrong codes in upstream data:
+
+```javascript normalize.js:79-82
+  // Wrong IATA codes in upstream data:
+  '4374':  { iata: 'GQ' },  // Sky Express Greece - correct code is GQ not G3
+  '19849': { iata: 'GX' },  // Guangxi Beibu Gulf Airlines - correct code is GX not UQ
+};
+```
+</Accordion>
+
+### How It Works
+
+ID corrections are applied after country corrections:
+
+```javascript normalize.js:108-116
+// Apply per-ID corrections
+if (ID_CORRECTIONS[id]) {
+  var fixes = ID_CORRECTIONS[id];
+  Object.keys(fixes).forEach(function(field) {
+    var idx = columns.indexOf(field);
+    if (idx !== -1) row[idx] = fixes[field];
+  });
+}
+```
+
+Each correction object can override any field for that specific airline ID.
+
+### Adding ID Corrections
+
+<Steps>
+  <Step title="Identify the Issue">
+    Find the airline ID that needs correction. You can search `airlines.json` or `airlines.dat` by name or code.
+  </Step>
+  
+  <Step title="Edit normalize.js">
+    Open `normalize.js` and locate the `ID_CORRECTIONS` object around line 33. Add your correction:
+    
+    ```javascript
+    var ID_CORRECTIONS = {
+      // ... existing corrections ...
+      
+      // Your new correction
+      '12345': { 
+        active: 'N',           // Mark as inactive
+        country: 'New Country'  // Fix country name
+      },
+    };
+    ```
+  </Step>
+  
+  <Step title="Add a Comment">
+    Document why the correction is needed:
+    
+    ```javascript
+    // AirlineX (AB) - merged with AirlineY 2024
+    '12345': { active: 'N' },
+    ```
+  </Step>
+  
+  <Step title="Test & Apply">
+    Re-run the normalization pipeline:
+    
+    ```bash
+    node normalize.js
+    node convert.js
+    ```
+  </Step>
+</Steps>
+
+<Info>
+Always include a comment explaining the correction. This helps future maintainers understand why the fix was applied.
+</Info>
+
+## Other Data Quality Fixes
+
+Beyond the correction maps, `normalize.js` also applies general data cleaning:
+
+### Callsign Whitespace Trimming
+
+Some upstream records have leading spaces in the callsign field:
+
+```javascript normalize.js:97-100
+// Strip leading spaces from callsign (upstream data corruption)
+if (row[5] && row[5][0] === ' ') {
+  row[5] = row[5].trim();
+}
+```
+
+## Tracking Corrections
+
+The normalize script reports how many rows were modified:
+
+```bash
+$ node normalize.js
+Normalized 127 rows in airlines.dat
+```
+
+This count includes all corrections applied: country name changes, ID-specific fixes, and whitespace trimming.
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Document Everything" icon="comment">
+    Always add comments explaining why a correction is needed. Include dates and reasons.
+  </Card>
+  
+  <Card title="Test First" icon="flask">
+    Before committing corrections, test them locally to ensure they work as expected.
+  </Card>
+  
+  <Card title="Upstream First" icon="arrow-up">
+    Consider submitting fixes to OpenFlights first. Use local corrections only when upstream changes aren't feasible.
+  </Card>
+  
+  <Card title="Version Control" icon="code-branch">
+    Commit normalize.js changes separately from data updates for clarity in git history.
+  </Card>
+</CardGroup>
+
+## Correction Priority
+
+Corrections are applied in this order:
+
+1. Callsign whitespace trimming
+2. Country name corrections (via `COUNTRY_CORRECTIONS`)
+3. Per-airline ID corrections (via `ID_CORRECTIONS`)
+
+<Warning>
+If you specify a country correction both in `COUNTRY_CORRECTIONS` and in an `ID_CORRECTIONS` entry, the `ID_CORRECTIONS` value will take precedence for that specific airline.
+</Warning>

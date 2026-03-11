@@ -1,0 +1,294 @@
+---
+title: "Accessing Data"
+description: "Learn how to access and manipulate airline data, including raw JSON exports and model attributes"
+---
+
+The airline-codes package stores data in a Backbone Collection. This page shows you how to access the underlying data in various formats.
+
+## Accessing Model Attributes
+
+Each airline is a Backbone Model with several attributes. Use the `get()` method to access individual properties:
+
+```javascript
+const airlines = require('airline-codes');
+
+const delta = airlines.findWhere({ iata: 'DL' });
+
+// Access individual attributes
+console.log(delta.get('id'));        // "2009"
+console.log(delta.get('name'));      // "Delta Air Lines"
+console.log(delta.get('alias'));     // ""
+console.log(delta.get('iata'));      // "DL"
+console.log(delta.get('icao'));      // "DAL"
+console.log(delta.get('callsign'));  // "DELTA"
+console.log(delta.get('country'));   // "United States"
+console.log(delta.get('active'));    // "Y"
+```
+
+<Info>
+  All airlines in the collection have these standard attributes: id, name, alias, iata, icao, callsign, country, and active.
+</Info>
+
+## Converting a Model to JSON
+
+Use the `toJSON()` method to convert a single airline model to a plain JavaScript object:
+
+```javascript
+const airlines = require('airline-codes');
+
+const emirates = airlines.findWhere({ iata: 'EK' });
+const emiratesData = emirates.toJSON();
+
+console.log(emiratesData);
+// Output:
+// {
+//   "id": "2183",
+//   "name": "Emirates",
+//   "alias": "Emirates Airlines",
+//   "iata": "EK",
+//   "icao": "UAE",
+//   "callsign": "EMIRATES",
+//   "country": "United Arab Emirates",
+//   "active": "Y"
+// }
+
+// Now it's a plain object
+console.log(typeof emiratesData); // "object"
+console.log(emiratesData.name);   // "Emirates"
+```
+
+<Tabs>
+  <Tab title="Single Airline">
+    ```javascript
+    const airline = airlines.findWhere({ iata: 'AA' });
+    const json = airline.toJSON();
+    
+    // JSON can be stringified
+    console.log(JSON.stringify(json, null, 2));
+    ```
+  </Tab>
+  <Tab title="Multiple Airlines">
+    ```javascript
+    const usAirlines = airlines.where({ country: 'United States' });
+    
+    // Convert each model to JSON
+    const jsonArray = usAirlines.map(airline => airline.toJSON());
+    
+    console.log(jsonArray);
+    // Array of plain objects
+    ```
+  </Tab>
+</Tabs>
+
+## Exporting the Entire Collection
+
+Convert the entire collection to a JSON array:
+
+```javascript
+const airlines = require('airline-codes');
+
+// Get all airlines as JSON array
+const allAirlines = airlines.toJSON();
+
+console.log(allAirlines.length); // 6048 (or similar, depending on data version)
+console.log(Array.isArray(allAirlines)); // true
+
+// Each item is a plain object
+console.log(allAirlines[0]);
+// {
+//   "id": "1",
+//   "name": "Private flight",
+//   "alias": "",
+//   "iata": "-",
+//   "icao": "N/A",
+//   "callsign": "",
+//   "country": "",
+//   "active": "Y"
+// }
+```
+
+## Accessing Raw JSON Data
+
+If you need to access the original airlines.json file directly:
+
+```javascript
+// Access the raw JSON file
+const airlinesJSON = require('airline-codes/airlines.json');
+
+console.log(Array.isArray(airlinesJSON)); // true
+console.log(airlinesJSON.length); // 6048 (or similar)
+
+// This is the raw data before Backbone wraps it
+console.log(airlinesJSON[15]);
+// {
+//   "id": "24",
+//   "name": "American Airlines",
+//   "alias": "",
+//   "iata": "AA",
+//   "icao": "AAL",
+//   "callsign": "AMERICAN",
+//   "country": "United States",
+//   "active": "Y"
+// }
+```
+
+<Note>
+  Loading the raw JSON bypasses the Backbone Collection, so you won't have access to methods like `findWhere` or `where`.
+</Note>
+
+## Iterating Over Airlines
+
+Backbone Collections provide several ways to iterate:
+
+### Using forEach
+
+```javascript
+const airlines = require('airline-codes');
+
+airlines.forEach(airline => {
+  console.log(`${airline.get('name')} (${airline.get('iata')})`);
+});
+```
+
+### Using map
+
+```javascript
+const airlines = require('airline-codes');
+
+// Create an array of airline names
+const names = airlines.map(airline => airline.get('name'));
+console.log(names.slice(0, 5));
+// ["Private flight", "1Time Airline", "40-Mile Air", ...]
+```
+
+### Using filter
+
+```javascript
+const airlines = require('airline-codes');
+
+// Filter airlines that have IATA codes
+const withIATA = airlines.filter(airline => {
+  const iata = airline.get('iata');
+  return iata && iata !== '' && iata !== '-' && iata !== 'N/A';
+});
+
+console.log(`${withIATA.length} airlines have valid IATA codes`);
+```
+
+<Accordion title="Complete Example: Export to Custom Format">
+  ```javascript
+  const airlines = require('airline-codes');
+  const fs = require('fs');
+
+  // Create a simplified export format
+  const simplified = airlines.map(airline => ({
+    code: airline.get('iata'),
+    name: airline.get('name'),
+    country: airline.get('country')
+  }));
+
+  // Filter out airlines without IATA codes
+  const withCodes = simplified.filter(a => 
+    a.code && a.code !== '' && a.code !== '-' && a.code !== 'N/A'
+  );
+
+  // Save to file
+  fs.writeFileSync(
+    'airlines-simplified.json',
+    JSON.stringify(withCodes, null, 2)
+  );
+
+  console.log(`Exported ${withCodes.length} airlines`);
+  ```
+</Accordion>
+
+## Accessing Collection Properties
+
+The collection itself has useful properties:
+
+```javascript
+const airlines = require('airline-codes');
+
+// Get the number of airlines
+console.log(airlines.length); // Total count
+console.log(airlines.size());  // Same as length
+
+// Check if collection is empty
+console.log(airlines.isEmpty()); // false
+
+// Get the comparator (sort field)
+console.log(airlines.comparator); // "name"
+```
+
+## Creating Custom Data Structures
+
+Convert the collection to custom formats for your application:
+
+### Create a Map by IATA Code
+
+```javascript
+const airlines = require('airline-codes');
+
+const airlinesByIATA = {};
+
+airlines.forEach(airline => {
+  const iata = airline.get('iata');
+  if (iata && iata !== '' && iata !== '-' && iata !== 'N/A') {
+    airlinesByIATA[iata] = airline.toJSON();
+  }
+});
+
+// Quick lookup
+console.log(airlinesByIATA['AA']); // American Airlines
+console.log(airlinesByIATA['BA']); // British Airways
+```
+
+### Group by Country
+
+```javascript
+const airlines = require('airline-codes');
+
+const airlinesByCountry = {};
+
+airlines.forEach(airline => {
+  const country = airline.get('country');
+  if (!airlinesByCountry[country]) {
+    airlinesByCountry[country] = [];
+  }
+  airlinesByCountry[country].push(airline.toJSON());
+});
+
+console.log(airlinesByCountry['United States'].length); // Number of US airlines
+console.log(airlinesByCountry['Japan'][0]); // First Japanese airline
+```
+
+<Warning>
+  Some airlines may have empty country values. Always validate data before grouping.
+</Warning>
+
+## Working with Attributes Object
+
+Access all attributes at once using the `attributes` property:
+
+```javascript
+const airlines = require('airline-codes');
+
+const airline = airlines.findWhere({ iata: 'EK' });
+
+// Access all attributes
+console.log(airline.attributes);
+// {
+//   id: "2183",
+//   name: "Emirates",
+//   alias: "Emirates Airlines",
+//   iata: "EK",
+//   icao: "UAE",
+//   callsign: "EMIRATES",
+//   country: "United Arab Emirates",
+//   active: "Y"
+// }
+```
+
+<Tip>
+  Use `toJSON()` instead of accessing `attributes` directly. It's the Backbone-recommended way and provides better encapsulation.
+</Tip>

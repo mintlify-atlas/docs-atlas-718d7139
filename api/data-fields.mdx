@@ -1,0 +1,381 @@
+---
+title: "Data Fields"
+description: "Reference for all fields in airline objects including types and descriptions"
+---
+
+## Overview
+
+Each airline in the collection is a Backbone Model containing the following attributes. All fields are strings, and some may be empty strings when data is not available.
+
+## Field Reference
+
+### id
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the airline
+</ResponseField>
+
+- **Type**: String
+- **Required**: Yes
+- **Description**: Numeric identifier stored as a string. Unique across all airlines in the dataset.
+- **Example**: `"24"`, `"3"`, `"1"`
+
+```javascript
+const airline = airlines.get('24');
+console.log(airline.get('id')); // "24"
+```
+
+### name
+
+<ResponseField name="name" type="string" required>
+  Full official name of the airline
+</ResponseField>
+
+- **Type**: String
+- **Required**: Yes
+- **Description**: The complete, official name of the airline. The collection is sorted alphabetically by this field.
+- **Example**: `"American Airlines"`, `"Delta Air Lines"`, `"British Airways"`
+
+```javascript
+const airline = airlines.findWhere({ iata: 'AA' });
+console.log(airline.get('name')); // "American Airlines"
+
+// Get all airline names
+const names = airlines.pluck('name');
+```
+
+<Note>
+The collection uses `comparator: 'name'`, so airlines are automatically sorted alphabetically by name.
+</Note>
+
+### alias
+
+<ResponseField name="alias" type="string">
+  Alternative name or common alias for the airline
+</ResponseField>
+
+- **Type**: String
+- **Required**: No (may be empty)
+- **Description**: Alternative names, former names, or commonly used aliases for the airline.
+- **Example**: `""` (often empty), or alternative airline names
+
+```javascript
+const airline = airlines.findWhere({ iata: 'AA' });
+const alias = airline.get('alias');
+
+if (alias && alias.length > 0) {
+  console.log(`Also known as: ${alias}`);
+}
+```
+
+### iata
+
+<ResponseField name="iata" type="string">
+  IATA airline designator code (2-character)
+</ResponseField>
+
+- **Type**: String
+- **Required**: No (may be empty or "-")
+- **Description**: The 2-letter IATA (International Air Transport Association) airline code. This is the most commonly used airline identifier.
+- **Format**: 2 uppercase letters, or "-" for none, or empty string
+- **Example**: `"AA"` (American Airlines), `"DL"` (Delta), `"BA"` (British Airways)
+
+```javascript
+// Find by IATA code
+const delta = airlines.findWhere({ iata: 'DL' });
+
+// Get all IATA codes
+const iataCodes = airlines.pluck('iata');
+
+// Filter airlines with valid IATA codes
+const withIata = airlines.filter(model => {
+  const iata = model.get('iata');
+  return iata && iata !== '-' && iata.length === 2;
+});
+```
+
+<Note>
+Some airlines may not have an IATA code. These will have either an empty string or "-" in this field.
+</Note>
+
+### icao
+
+<ResponseField name="icao" type="string">
+  ICAO airline designator code (3-character)
+</ResponseField>
+
+- **Type**: String
+- **Required**: No (may be empty or "N/A")
+- **Description**: The 3-letter ICAO (International Civil Aviation Organization) airline code. Used primarily in air traffic control and flight planning.
+- **Format**: 3 uppercase letters, or "N/A" for none, or empty string
+- **Example**: `"AAL"` (American Airlines), `"DAL"` (Delta), `"BAW"` (British Airways)
+
+```javascript
+// Find by ICAO code
+const united = airlines.findWhere({ icao: 'UAL' });
+
+// Get all ICAO codes
+const icaoCodes = airlines.pluck('icao');
+
+// Check if airline has ICAO code
+const hasIcao = (airline) => {
+  const icao = airline.get('icao');
+  return icao && icao !== 'N/A' && icao.length > 0;
+};
+```
+
+### callsign
+
+<ResponseField name="callsign" type="string">
+  Radio callsign used in air traffic control communications
+</ResponseField>
+
+- **Type**: String
+- **Required**: No (may be empty)
+- **Description**: The callsign used by pilots and air traffic control for radio communications. Often the airline name or a variation of it.
+- **Example**: `"AMERICAN"`, `"DELTA"`, `"SPEEDBIRD"` (British Airways)
+
+```javascript
+const airline = airlines.findWhere({ iata: 'BA' });
+console.log(airline.get('callsign')); // "SPEEDBIRD"
+
+// Find airlines with specific callsign
+const speedbird = airlines.findWhere({ callsign: 'SPEEDBIRD' });
+
+// Get all airlines with callsigns
+const withCallsigns = airlines.filter(model => {
+  const callsign = model.get('callsign');
+  return callsign && callsign.length > 0;
+});
+```
+
+### country
+
+<ResponseField name="country" type="string">
+  Country where the airline is registered or primarily operates
+</ResponseField>
+
+- **Type**: String
+- **Required**: No (may be empty)
+- **Description**: The country of registration or primary operation for the airline. Full country name in English.
+- **Example**: `"United States"`, `"United Kingdom"`, `"Japan"`, `"Germany"`
+
+```javascript
+// Find all airlines from a country
+const usAirlines = airlines.where({ country: 'United States' });
+console.log(`US airlines: ${usAirlines.length}`);
+
+// Get list of all countries
+const countries = airlines.pluck('country');
+const uniqueCountries = [...new Set(countries)].filter(c => c.length > 0).sort();
+
+// Group airlines by country
+const byCountry = airlines.reduce((acc, model) => {
+  const country = model.get('country');
+  if (country) {
+    if (!acc[country]) acc[country] = [];
+    acc[country].push(model.get('name'));
+  }
+  return acc;
+}, {});
+
+console.log(byCountry['Japan']); // All Japanese airlines
+```
+
+### active
+
+<ResponseField name="active" type="string">
+  Indicates whether the airline is currently active
+</ResponseField>
+
+- **Type**: String
+- **Required**: Yes
+- **Description**: Single character indicating operational status. "Y" for active, "N" for inactive.
+- **Values**: `"Y"` (active) or `"N"` (inactive)
+- **Example**: `"Y"`
+
+```javascript
+// Get all active airlines
+const active = airlines.where({ active: 'Y' });
+console.log(`Active airlines: ${active.length}`);
+
+// Get all inactive airlines
+const inactive = airlines.where({ active: 'N' });
+console.log(`Inactive airlines: ${inactive.length}`);
+
+// Check if specific airline is active
+const airline = airlines.findWhere({ iata: 'AA' });
+if (airline.get('active') === 'Y') {
+  console.log('Airline is currently active');
+}
+```
+
+## Complete Data Example
+
+Here's a complete airline object with all fields:
+
+```javascript
+{
+  "id": "24",
+  "name": "American Airlines",
+  "alias": "",
+  "iata": "AA",
+  "icao": "AAL",
+  "callsign": "AMERICAN",
+  "country": "United States",
+  "active": "Y"
+}
+```
+
+## Accessing Fields
+
+### Using get()
+
+The recommended way to access fields from a Backbone Model:
+
+```javascript
+const airline = airlines.findWhere({ iata: 'DL' });
+
+// Get individual fields
+const name = airline.get('name');
+const country = airline.get('country');
+const icao = airline.get('icao');
+const callsign = airline.get('callsign');
+```
+
+### Using toJSON()
+
+Convert a model to a plain JavaScript object:
+
+```javascript
+const airline = airlines.findWhere({ iata: 'UA' });
+const data = airline.toJSON();
+
+console.log(data);
+// {
+//   id: '...',
+//   name: 'United Airlines',
+//   alias: '',
+//   iata: 'UA',
+//   icao: 'UAL',
+//   callsign: 'UNITED',
+//   country: 'United States',
+//   active: 'Y'
+// }
+```
+
+### Using has()
+
+Check if a field exists:
+
+```javascript
+const airline = airlines.first();
+
+if (airline.has('callsign')) {
+  console.log('Callsign:', airline.get('callsign'));
+}
+```
+
+## Data Validation Examples
+
+### Check for Empty Fields
+
+```javascript
+// Find airlines with complete data
+const complete = airlines.filter(model => {
+  return model.get('name') &&
+         model.get('iata') && model.get('iata') !== '-' &&
+         model.get('icao') && model.get('icao') !== 'N/A' &&
+         model.get('callsign') &&
+         model.get('country');
+});
+
+console.log(`Airlines with complete data: ${complete.length}`);
+```
+
+### Find Missing Data
+
+```javascript
+// Find airlines without IATA codes
+const noIata = airlines.filter(model => {
+  const iata = model.get('iata');
+  return !iata || iata === '-' || iata.length === 0;
+});
+
+// Find airlines without country
+const noCountry = airlines.filter(model => {
+  return !model.get('country') || model.get('country').length === 0;
+});
+```
+
+## Common Query Patterns
+
+### Search by Code
+
+```javascript
+// Search by any code type
+function findAirlineByCode(code) {
+  return airlines.find(model => {
+    return model.get('iata') === code || 
+           model.get('icao') === code;
+  });
+}
+
+const airline = findAirlineByCode('AA');
+const airline2 = findAirlineByCode('AAL');
+```
+
+### Search by Name (Partial)
+
+```javascript
+// Case-insensitive partial name search
+function searchByName(searchTerm) {
+  const term = searchTerm.toLowerCase();
+  return airlines.filter(model => {
+    const name = model.get('name').toLowerCase();
+    return name.includes(term);
+  });
+}
+
+const results = searchByName('american');
+// Finds "American Airlines", "American Eagle", etc.
+```
+
+### Filter Active Airlines by Country
+
+```javascript
+function getActiveAirlinesByCountry(country) {
+  return airlines.filter(model => {
+    return model.get('country') === country &&
+           model.get('active') === 'Y';
+  });
+}
+
+const activeUS = getActiveAirlinesByCountry('United States');
+```
+
+## Data Statistics
+
+```javascript
+// Count airlines by country
+const countryStats = airlines.reduce((stats, model) => {
+  const country = model.get('country');
+  if (country) {
+    stats[country] = (stats[country] || 0) + 1;
+  }
+  return stats;
+}, {});
+
+// Find countries with most airlines
+const topCountries = Object.entries(countryStats)
+  .sort((a, b) => b[1] - a[1])
+  .slice(0, 10);
+
+console.log('Top 10 countries by airline count:', topCountries);
+```
+
+## Next Steps
+
+<Card title="Methods" icon="code" href="/api/methods">
+  Explore all available methods for querying and manipulating airline data
+</Card>

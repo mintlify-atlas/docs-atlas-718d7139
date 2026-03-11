@@ -1,80 +1,196 @@
 ---
 title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+description: "Get started with airline-codes in under 60 seconds"
 ---
 
-## Get started in three steps
+## Installation
 
-Get your documentation site running locally and make your first customization.
+First, install the package:
 
-### Step 1: Set up your local environment
+<CodeGroup>
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+```bash npm
+npm install airline-codes
+```
+
+```bash yarn
+yarn add airline-codes
+```
+
+```bash pnpm
+pnpm add airline-codes
+```
+
+</CodeGroup>
+
+## Basic Usage
+
+The `airline-codes` package exports a Backbone Collection containing all airline data:
+
+```javascript
+const airlines = require('airline-codes');
+
+// Find an airline by IATA code
+const airline = airlines.findWhere({ iata: 'WS' });
+console.log(airline.get('name'));
+// => Westjet
+```
+
+## Common Operations
+
+<Steps>
+  <Step title="Lookup by IATA Code">
+    Use `findWhere` to find a single airline by its IATA code:
+
+    ```javascript
+    const delta = airlines.findWhere({ iata: 'DL' });
+    console.log(delta.get('name'));        // => Delta Air Lines
+    console.log(delta.get('icao'));        // => DAL
+    console.log(delta.get('callsign'));    // => DELTA
+    console.log(delta.get('country'));     // => United States
+    ```
+  </Step>
+
+  <Step title="Filter by Country">
+    Use `where` to find all airlines matching specific criteria:
+
+    ```javascript
+    const canadianAirlines = airlines.where({ country: 'Canada' });
+    console.log(`Found ${canadianAirlines.length} Canadian airlines`);
+
+    // Get just the names
+    const names = canadianAirlines.map(a => a.get('name'));
+    console.log(names);
+    ```
+  </Step>
+
+  <Step title="Access Raw JSON Data">
+    Get the raw JSON array if you don't need Backbone Collection methods:
+
+    ```javascript
+    // Option 1: Convert collection to JSON
+    const airlinesArray = require('airline-codes').toJSON();
+
+    // Option 2: Import JSON directly
+    const airlinesArray = require('airline-codes/airlines.json');
+
+    console.log(airlinesArray[0]);
+    // => { id: "1", name: "Private flight", iata: "-", ... }
+    ```
+  </Step>
+
+  <Step title="Sort Airlines">
+    The collection is pre-sorted by name (via `comparator: 'name'`):
+
+    ```javascript
+    // Airlines are already sorted alphabetically by name
+    const first = airlines.at(0);
+    console.log(first.get('name'));
+    // => First airline alphabetically
+
+    // Get first 10 airlines
+    const topTen = airlines.first(10);
+    topTen.forEach(airline => {
+      console.log(airline.get('name'));
+    });
+    ```
+  </Step>
+</Steps>
+
+## Advanced Queries
+
+<Tip>
+  Since `airline-codes` returns a Backbone Collection, you have access to all [Backbone Collection methods](https://backbonejs.org/#Collection) including `filter`, `find`, `map`, `reduce`, and more.
+</Tip>
+
+### Custom Filtering
+
+```javascript
+// Find all active US airlines with ICAO codes
+const airlines = require('airline-codes');
+
+const filtered = airlines.filter(airline => {
+  return airline.get('country') === 'United States' &&
+         airline.get('active') === 'Y' &&
+         airline.get('icao') !== '';
+});
+
+console.log(`Found ${filtered.length} active US airlines with ICAO codes`);
+```
+
+### Search by Airline Name
+
+```javascript
+// Find airlines with "Air" in the name
+const airlineList = airlines.filter(airline => {
+  return airline.get('name').toLowerCase().includes('air');
+});
+
+const names = airlineList.map(a => a.get('name'));
+console.log(names.slice(0, 5));
+// => ['Air Europa', 'Air France', 'Air Canada', ...]
+```
+
+### Build a Lookup Map
+
+```javascript
+// Create a fast IATA code lookup object
+const iataMap = {};
+
+airlines.forEach(airline => {
+  const iata = airline.get('iata');
+  if (iata && iata !== '-') {
+    iataMap[iata] = airline.toJSON();
+  }
+});
+
+// Now you can do O(1) lookups
+console.log(iataMap['AA'].name);
+// => American Airlines
+```
+
+## Real-World Example
+
+Here's a complete example of building an airline search function:
+
+```javascript
+const airlines = require('airline-codes');
+
+function searchAirlines(query) {
+  const lowerQuery = query.toLowerCase();
+  
+  return airlines.filter(airline => {
+    const name = airline.get('name').toLowerCase();
+    const iata = airline.get('iata').toLowerCase();
+    const icao = airline.get('icao').toLowerCase();
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+    return name.includes(lowerQuery) ||
+           iata === lowerQuery ||
+           icao === lowerQuery;
+  }).map(airline => ({
+    name: airline.get('name'),
+    iata: airline.get('iata'),
+    icao: airline.get('icao'),
+    country: airline.get('country')
+  }));
+}
 
-### Step 2: Deploy your changes
+// Usage
+const results = searchAirlines('united');
+console.log(results);
+// => [
+//   { name: 'United Airlines', iata: 'UA', icao: 'UAL', country: 'United States' },
+//   ...
+// ]
+```
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
+## Next Steps
 
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="API Reference" icon="book" href="/api/overview">
+    Explore all available methods and data fields
+  </Card>
+  <Card title="Backbone Docs" icon="link" href="https://backbonejs.org/#Collection">
+    Learn about Backbone Collection methods
+  </Card>
 </CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
