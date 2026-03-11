@@ -1,0 +1,49 @@
+{
+  "projectType": "sdk-library",
+  "projectName": "Airline Codes",
+  "projectDescription": "Lightweight npm dataset for airline IATA/ICAO code lookups with Backbone Collection interface.",
+  "theme": "mint",
+  "primaryColor": "#848c8e",
+  "lightColor": "#11161e",
+  "darkColor": "#cfd0d2",
+  "navigation": {
+    "groups": [
+      {
+        "group": "Get Started",
+        "pages": ["introduction", "installation", "quickstart"]
+      },
+      {
+        "group": "Usage",
+        "pages": ["usage/basic-queries", "usage/accessing-data", "usage/collection-methods"]
+      },
+      {
+        "group": "Data Management",
+        "pages": ["data/updating-data", "data/data-corrections", "data/data-format"]
+      },
+      {
+        "group": "API Reference",
+        "pages": ["api/overview", "api/methods", "api/data-fields"]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "IATA and ICAO airline code lookups",
+    "Backbone Collection interface with findWhere, sort, and filter methods",
+    "JSON dataset sourced from OpenFlights.org",
+    "Automatic weekly data synchronization",
+    "Country name normalization and data quality corrections"
+  ],
+  "publicApiSurface": [
+    "require('airline-codes') - Backbone Collection with airline data",
+    "require('airline-codes/airlines.json') - Raw JSON array of airlines",
+    "airlines.findWhere({ iata: 'CODE' }) - Find airline by IATA code",
+    "airlines.findWhere({ icao: 'CODE' }) - Find airline by ICAO code",
+    "airlines.toJSON() - Convert collection to JSON array",
+    "airlines.at(index) - Get airline by index",
+    "airlines.sort() - Sort collection",
+    "airline.get('name') - Get airline name",
+    "airline.get('country') - Get airline country",
+    "airline.get('callsign') - Get airline callsign",
+    "airline.get('active') - Check if airline is active"
+  ]
+}
